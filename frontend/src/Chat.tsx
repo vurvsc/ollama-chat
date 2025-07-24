@@ -3,11 +3,10 @@ import axios from "axios";
 import ReactMarkdown from "react-markdown"; // Cài: npm install react-markdown
 
 const MODEL_LIST = [
-  { label: "Gemma 7B", value: "gemma:7b" },
-  { label: "Gemma 2B", value: "gemma:2b" },
-  { label: "TinyLlama", value: "tinyllama" },
-  { label: "Llama3", value: "llama3" },
-  // Thêm các model khác nếu cần
+  { label: "hermes3:3b", value: "hermes3:3b" },
+  { label: "gemma:2b", value: "gemma:2b" },
+  { label: "llama2", value: "llama2" },
+  // Add more models if needed
 ];
 
 interface Message {
@@ -22,6 +21,12 @@ export default function Chat() {
   const [model, setModel] = useState(MODEL_LIST[0].value);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Reset conversation on refresh/mount
+  useEffect(() => {
+    setMessages([]);
+    axios.post("http://192.168.2.45:5000/api/reset", {}, { withCredentials: true });
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -35,19 +40,23 @@ export default function Chat() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/chat", {
-        message: input,
-        model: model, // gửi model lên backend
-      });
+      const res = await axios.post(
+        "http://192.168.2.45:5000/api/chat",
+        {
+          message: input,
+          model: model,
+        },
+        { withCredentials: true }
+      );
       setMessages([
         ...newMessages,
-        { sender: "assistant", text: res.data.reply }, // Luôn hiển thị nội dung trả về
+        { sender: "assistant", text: res.data.reply },
       ]);
     } catch (err) {
       console.error(err);
       setMessages([
         ...newMessages,
-        { sender: "assistant", text: "⚠️ Không thể kết nối tới server." }, // Chỉ báo lỗi khi thật sự không kết nối được
+        { sender: "assistant", text: "⚠️ Cannot connect to server." },
       ]);
     } finally {
       setLoading(false);
@@ -93,12 +102,24 @@ export default function Chat() {
             {m.sender === "user" && (
               <img
                 src="https://api.dicebear.com/7.x/personas/svg?seed=user"
-                alt="Bạn"
+                alt="You"
                 className="avatar"
               />
             )}
           </div>
         ))}
+        {loading && (
+          <div className="message-row assistant">
+            <img
+              src="https://api.dicebear.com/7.x/bottts/svg?seed=ai"
+              alt="AI"
+              className="avatar"
+            />
+            <div className="message-bubble assistant">
+              <span>Answering...</span>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       <div className="input-row">
@@ -107,7 +128,7 @@ export default function Chat() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           className="chat-input"
-          placeholder="Nhập tin nhắn..."
+          placeholder="Type a message..."
           disabled={loading}
         />
         <button
@@ -115,7 +136,7 @@ export default function Chat() {
           className="send-btn"
           disabled={loading}
         >
-          Gửi
+          Send
         </button>
       </div>
     </div>
