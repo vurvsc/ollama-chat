@@ -6,7 +6,10 @@ app = Flask(__name__)
 app.secret_key = "your_secret_key_here"  # Thay bằng secret key mạnh
 CORS(app, supports_credentials=True)  # Cho phép gửi cookie
 
-SYSTEM_PROMPT = {"role": "system", "content": "You are a helpful assistant."}
+SYSTEM_PROMPT = {
+    "role": "system",
+    "content": "あなたは親切なアシスタントです。すべての会話と回答は日本語で行ってください。"
+}
 OLLAMA_URL = "http://192.168.2.45:11434/api/chat"
 
 def get_history():
